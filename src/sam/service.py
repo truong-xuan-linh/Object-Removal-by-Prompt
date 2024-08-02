@@ -8,14 +8,15 @@ from segment_anything import SamPredictor
 SAM_MODELS = {
     "vit_h": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth",
     "vit_l": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth",
-    "vit_b": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"
+    "vit_b": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth",
 }
 
-CACHE_PATH = os.environ.get("TORCH_HOME", os.path.expanduser("~/.cache/torch/hub/checkpoints"))
+CACHE_PATH = os.environ.get(
+    "TORCH_HOME", os.path.expanduser("~/.cache/torch/hub/checkpoints")
+)
 
 
-class SAM():
-
+class SAM:
     def __init__(self, sam_type="vit_h", ckpt_path=None):
         self.sam_type = sam_type
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -50,7 +51,9 @@ class SAM():
     def predict_sam(self, image_pil, boxes):
         image_array = np.asarray(image_pil)
         self.sam.set_image(image_array)
-        transformed_boxes = self.sam.transform.apply_boxes_torch(boxes, image_array.shape[:2])
+        transformed_boxes = self.sam.transform.apply_boxes_torch(
+            boxes, image_array.shape[:2]
+        )
         masks, _, _ = self.sam.predict_torch(
             point_coords=None,
             point_labels=None,

@@ -48,18 +48,18 @@ os.environ["NUMEXPR_NUM_THREADS"] = NUM_THREADS
 if os.environ.get("CACHE_DIR"):
     os.environ["TORCH_HOME"] = os.environ["CACHE_DIR"]
 
-#BUILD_DIR = os.environ.get("LAMA_CLEANER_BUILD_DIR", "./lama_cleaner/app/build")
+# BUILD_DIR = os.environ.get("LAMA_CLEANER_BUILD_DIR", "./lama_cleaner/app/build")
 
 # For Seam-carving
 
 from scipy import ndimage as ndi
 
-SEAM_COLOR = np.array([255, 200, 200])    # seam visualization color (BGR)
-SHOULD_DOWNSIZE = True                    # if True, downsize image for faster carving
-DOWNSIZE_WIDTH = 500                      # resized image width if SHOULD_DOWNSIZE is True
-ENERGY_MASK_CONST = 100000.0              # large energy value for protective masking
-MASK_THRESHOLD = 10                       # minimum pixel intensity for binary mask
-USE_FORWARD_ENERGY = True                 # if True, use forward energy algorithm
+SEAM_COLOR = np.array([255, 200, 200])  # seam visualization color (BGR)
+SHOULD_DOWNSIZE = True  # if True, downsize image for faster carving
+DOWNSIZE_WIDTH = 500  # resized image width if SHOULD_DOWNSIZE is True
+ENERGY_MASK_CONST = 100000.0  # large energy value for protective masking
+MASK_THRESHOLD = 10  # minimum pixel intensity for binary mask
+USE_FORWARD_ENERGY = True  # if True, use forward energy algorithm
 
 device = torch.device("cpu")
 model_path = "saved/big-lama.pt"
@@ -83,12 +83,14 @@ def visualize(im, boolmask=None, rotate=False):
     cv2.waitKey(1)
     return vis
 
+
 def resize(image, width):
     dim = None
     h, w = image.shape[:2]
     dim = (width, int(h * width / float(w)))
-    image = image.astype('float32')
+    image = image.astype("float32")
     return cv2.resize(image, dim)
+
 
 def rotate_image(image, clockwise):
     k = 1 if clockwise else 3
@@ -99,12 +101,13 @@ def rotate_image(image, clockwise):
 # ENERGY FUNCTIONS
 ########################################
 
+
 def backward_energy(im):
     """
     Simple gradient magnitude energy map.
     """
-    xgrad = ndi.convolve1d(im, np.array([1, 0, -1]), axis=1, mode='wrap')
-    ygrad = ndi.convolve1d(im, np.array([1, 0, -1]), axis=0, mode='wrap')
+    xgrad = ndi.convolve1d(im, np.array([1, 0, -1]), axis=1, mode="wrap")
+    ygrad = ndi.convolve1d(im, np.array([1, 0, -1]), axis=0, mode="wrap")
 
     grad_mag = np.sqrt(np.sum(xgrad**2, axis=2) + np.sum(ygrad**2, axis=2))
 
@@ -112,6 +115,7 @@ def backward_energy(im):
     # cv2.imwrite("backward_energy_demo.jpg", vis)
 
     return grad_mag
+
 
 def forward_energy(im):
     """
@@ -135,7 +139,7 @@ def forward_energy(im):
     cR = np.abs(U - R) + cU
 
     for i in range(1, h):
-        mU = m[i-1]
+        mU = m[i - 1]
         mL = np.roll(mU, 1)
         mR = np.roll(mU, -1)
 
@@ -152,9 +156,11 @@ def forward_energy(im):
 
     return energy
 
+
 ########################################
 # SEAM HELPER FUNCTIONS
 ########################################
+
 
 def add_seam(im, seam_idx):
     """
@@ -168,17 +174,18 @@ def add_seam(im, seam_idx):
         col = seam_idx[row]
         for ch in range(3):
             if col == 0:
-                p = np.mean(im[row, col: col + 2, ch])
+                p = np.mean(im[row, col : col + 2, ch])
                 output[row, col, ch] = im[row, col, ch]
                 output[row, col + 1, ch] = p
-                output[row, col + 1:, ch] = im[row, col:, ch]
+                output[row, col + 1 :, ch] = im[row, col:, ch]
             else:
-                p = np.mean(im[row, col - 1: col + 1, ch])
-                output[row, : col, ch] = im[row, : col, ch]
+                p = np.mean(im[row, col - 1 : col + 1, ch])
+                output[row, :col, ch] = im[row, :col, ch]
                 output[row, col, ch] = p
-                output[row, col + 1:, ch] = im[row, col:, ch]
+                output[row, col + 1 :, ch] = im[row, col:, ch]
 
     return output
+
 
 def add_seam_grayscale(im, seam_idx):
     """
@@ -190,26 +197,29 @@ def add_seam_grayscale(im, seam_idx):
     for row in range(h):
         col = seam_idx[row]
         if col == 0:
-            p = np.mean(im[row, col: col + 2])
+            p = np.mean(im[row, col : col + 2])
             output[row, col] = im[row, col]
             output[row, col + 1] = p
-            output[row, col + 1:] = im[row, col:]
+            output[row, col + 1 :] = im[row, col:]
         else:
-            p = np.mean(im[row, col - 1: col + 1])
-            output[row, : col] = im[row, : col]
+            p = np.mean(im[row, col - 1 : col + 1])
+            output[row, :col] = im[row, :col]
             output[row, col] = p
-            output[row, col + 1:] = im[row, col:]
+            output[row, col + 1 :] = im[row, col:]
 
     return output
+
 
 def remove_seam(im, boolmask):
     h, w = im.shape[:2]
     boolmask3c = np.stack([boolmask] * 3, axis=2)
     return im[boolmask3c].reshape((h, w - 1, 3))
 
+
 def remove_seam_grayscale(im, boolmask):
     h, w = im.shape[:2]
     return im[boolmask].reshape((h, w - 1))
+
 
 def get_minimum_seam(im, mask=None, remove_mask=None):
     """
@@ -231,19 +241,19 @@ def get_minimum_seam(im, mask=None, remove_mask=None):
 
     return np.array(seam_idx), boolmask
 
+
 def compute_shortest_path(M, im, h, w):
     backtrack = np.zeros_like(M, dtype=np.int_)
-
 
     # populate DP matrix
     for i in range(1, h):
         for j in range(0, w):
             if j == 0:
-                idx = np.argmin(M[i - 1, j:j + 2])
+                idx = np.argmin(M[i - 1, j : j + 2])
                 backtrack[i, j] = idx + j
-                min_energy = M[i-1, idx + j]
+                min_energy = M[i - 1, idx + j]
             else:
-                idx = np.argmin(M[i - 1, j - 1:j + 2])
+                idx = np.argmin(M[i - 1, j - 1 : j + 2])
                 backtrack[i, j] = idx + j - 1
                 min_energy = M[i - 1, idx + j - 1]
 
@@ -253,7 +263,7 @@ def compute_shortest_path(M, im, h, w):
     seam_idx = []
     boolmask = np.ones((h, w), dtype=np.bool_)
     j = np.argmin(M[-1])
-    for i in range(h-1, -1, -1):
+    for i in range(h - 1, -1, -1):
         boolmask[i, j] = False
         seam_idx.append(j)
         j = backtrack[i, j]
@@ -261,9 +271,11 @@ def compute_shortest_path(M, im, h, w):
     seam_idx.reverse()
     return seam_idx, boolmask
 
+
 ########################################
 # MAIN ALGORITHM
 ########################################
+
 
 def seams_removal(im, num_remove, mask=None, vis=False, rot=False):
     for _ in range(num_remove):
@@ -307,9 +319,11 @@ def seams_insertion(im, num_add, mask=None, vis=False, rot=False):
 
     return im, mask
 
+
 ########################################
 # MAIN DRIVER FUNCTIONS
 ########################################
+
 
 def seam_carve(im, dy, dx, mask=None, vis=False):
     im = im.astype(np.float64)
@@ -376,10 +390,9 @@ def object_removal(im, rmask, mask=None, vis=False, horizontal_removal=False):
     return output
 
 
-
-def s_image(im,mask,vs,hs,mode="resize"):
+def s_image(im, mask, vs, hs, mode="resize"):
     im = cv2.cvtColor(im, cv2.COLOR_RGBA2RGB)
-    mask = 255-mask[:,:,3]
+    mask = 255 - mask[:, :, 3]
     h, w = im.shape[:2]
     if SHOULD_DOWNSIZE and w > DOWNSIZE_WIDTH:
         im = resize(im, width=DOWNSIZE_WIDTH)
@@ -387,15 +400,14 @@ def s_image(im,mask,vs,hs,mode="resize"):
             mask = resize(mask, width=DOWNSIZE_WIDTH)
 
     # image resize mode
-    if mode=="resize":
-        dy = hs#reverse
-        dx = vs#reverse
+    if mode == "resize":
+        dy = hs  # reverse
+        dx = vs  # reverse
         assert dy is not None and dx is not None
         output = seam_carve(im, dy, dx, mask, False)
 
-
     # object removal mode
-    elif mode=="remove":
+    elif mode == "remove":
         assert mask is not None
         output = object_removal(im, mask, None, False, True)
 
@@ -403,6 +415,7 @@ def s_image(im,mask,vs,hs,mode="resize"):
 
 
 ##### Inpainting helper code
+
 
 def run(image, mask):
     """
@@ -443,10 +456,10 @@ def process_inpaint(image, mask):
     original_shape = image.shape
     interpolation = cv2.INTER_CUBIC
 
-    #size_limit: Union[int, str] = request.form.get("sizeLimit", "1080")
-    #if size_limit == "Original":
+    # size_limit: Union[int, str] = request.form.get("sizeLimit", "1080")
+    # if size_limit == "Original":
     size_limit = max(image.shape)
-    #else:
+    # else:
     #    size_limit = int(size_limit)
 
     print(f"Origin image shape: {original_shape}")
@@ -454,7 +467,7 @@ def process_inpaint(image, mask):
     print(f"Resized image shape: {image.shape}")
     image = norm_img(image)
 
-    mask = 255-mask[:,:,3]
+    mask = 255 - mask[:, :, 3]
     mask = resize_max_size(mask, size_limit=size_limit, interpolation=interpolation)
     mask = norm_img(mask)
 

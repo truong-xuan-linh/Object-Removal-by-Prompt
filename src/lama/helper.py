@@ -86,5 +86,6 @@ def pad_img_to_modulo(img, mod):
         ((0, 0), (0, out_height - height), (0, out_width - width)),
         mode="symmetric",
     )
-    
+
+
 download_model()

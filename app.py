@@ -5,6 +5,7 @@ import gradio as gr
 from gradio_image_annotation import image_annotator
 from PIL import Image
 from src.main import Service
+
 service = Service()
 
 

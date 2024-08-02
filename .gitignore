@@ -1,3 +1,4 @@
 *test*
 __pycache__
 *.pt*
+.ruff_cache
