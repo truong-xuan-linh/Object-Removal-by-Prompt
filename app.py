@@ -103,4 +103,4 @@ with gr.Blocks() as demo:
             cache_examples=True,
         )
 
-demo.launch()
+demo.launch(share=True)
