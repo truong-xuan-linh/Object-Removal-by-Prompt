@@ -14,9 +14,9 @@ from huggingface_hub import hf_hub_download
 CACHE_PATH = os.environ.get(
     "TORCH_HOME", os.path.expanduser("~/.cache/torch/hub/checkpoints")
 )
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
-
-def load_model_hf(repo_id, filename, ckpt_config_filename, device="cpu"):
+def load_model_hf(repo_id, filename, ckpt_config_filename, device=device):
     cache_config_file = hf_hub_download(repo_id=repo_id, filename=ckpt_config_filename)
 
     args = SLConfig.fromfile(cache_config_file)
@@ -24,7 +24,7 @@ def load_model_hf(repo_id, filename, ckpt_config_filename, device="cpu"):
     args.device = device
 
     cache_file = hf_hub_download(repo_id=repo_id, filename=filename)
-    checkpoint = torch.load(cache_file, map_location="cpu")
+    checkpoint = torch.load(cache_file, map_location=device)
     log = model.load_state_dict(clean_state_dict(checkpoint["model"]), strict=False)
     print(f"Model loaded from {cache_file} \n => {log}")
     model.eval()
