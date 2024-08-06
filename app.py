@@ -20,7 +20,7 @@ def on_change_prompt(img: Image.Image, prompt: str):
 
 desc = """
 <center>
-<h1>Object Eraser by Linh Truong, Hang Nguyen, and Huy Le</h1>
+<h1>Object Eraser by Linh Truong, Hang Luong, and Huy Le</h1>
 <p style="font-size: 1.25rem;">
 
 </p>
